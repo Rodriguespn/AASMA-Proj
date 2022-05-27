@@ -8,11 +8,11 @@ from ctf.pieces import Unit, Flag
 from ctf.q_learning.environment import Environment
 from ctf.rendering import Renderer
 
-UP = 0
-DOWN = 1
-RIGHT = 2
-LEFT = 3
-STAY = 4
+UP = 0, 1
+DOWN = 1, 0
+RIGHT = 2, 3
+LEFT = 3, 2
+STAY = 4, 4
 
 
 class Ctf(Environment):
@@ -50,11 +50,21 @@ class Ctf(Environment):
             hashcode = prime * hashcode + hash(tuple(self.units[i]))
         return hashcode
 
-    def key(self):
-        return (
-            tuple([unit.position for unit in self.units[0]]),
-            tuple([unit.position for unit in self.units[1]])
-        )
+    def _rotate_position(self, position):
+        height, width = self.board.shape
+        return height - position[0] - 1, width - position[1] - 1
+
+    def key(self, unit):
+        if unit.team == 0:
+            return (
+                tuple([unit.position for unit in self.units[0]]),
+                tuple([unit.position for unit in self.units[1]])
+            )
+        else:
+            return (
+                tuple([self._rotate_position(unit.position) for unit in self.units[1]]),
+                tuple([self._rotate_position(unit.position) for unit in self.units[0]])
+            )
 
     def copy(self):
         return Ctf(
@@ -71,27 +81,31 @@ class Ctf(Environment):
             renderer=self.renderer
         )
 
+    def manhattan_distance(self, pos1, pos2):
+        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+
     def cost(self, unit, direction):
         new_position = self._new_position(unit, direction)
 
         if new_position == self.flags[~unit.team].position:
             return 0
 
-        if new_position == unit.position and direction != STAY:
-            return 1
+        for enemy in self.units[~unit.team]:
+            if self.manhattan_distance(enemy.position, self.flags[unit.team].position) == 1:
+                return 1
 
         return 0.5
 
     def _new_position(self, unit, direction):
         y, x = unit.position
 
-        if direction == UP and self.board[y - 1][x] == 0:
+        if direction == UP[unit.team] and self.board[y - 1][x] == 0:
             return y - 1, x
-        elif direction == DOWN and self.board[y + 1][x] == 0:
+        elif direction == DOWN[unit.team] and self.board[y + 1][x] == 0:
             return y + 1, x
-        elif direction == LEFT and self.board[y][x - 1] == 0:
+        elif direction == LEFT[unit.team] and self.board[y][x - 1] == 0:
             return y, x - 1
-        elif direction == RIGHT and self.board[y][x + 1] == 0:
+        elif direction == RIGHT[unit.team] and self.board[y][x + 1] == 0:
             return y, x + 1
 
         return y, x
@@ -199,7 +213,12 @@ class Ctf(Environment):
 
     def new_game(self, board=None, number_units=2, unit_positions=None, flag_positions=None):
         self._new_board(board)
+
         self._new_units(number_units, unit_positions)
+        for i in range(2):
+            for unit in self.units[i]:
+                unit.import_q_values("../ctf/data/simple_1_0.npy")
+
         self._new_flags(flag_positions)
 
     def reset(self):

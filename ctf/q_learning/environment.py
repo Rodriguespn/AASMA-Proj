@@ -5,7 +5,7 @@ class Environment:
     def __hash__(self):
         raise NotImplementedError
 
-    def key(self):
+    def key(self, actor):
         raise NotImplementedError
 
     def copy(self):
