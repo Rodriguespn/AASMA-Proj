@@ -5,6 +5,9 @@ class Environment:
     def __hash__(self):
         raise NotImplementedError
 
+    def key(self):
+        raise NotImplementedError
+
     def copy(self):
         raise NotImplementedError
 
