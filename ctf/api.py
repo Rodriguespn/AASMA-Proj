@@ -41,15 +41,20 @@ class Ctf(Environment):
         self.renderer = renderer
 
     def __eq__(self, other):
-        return self.flags == other.flags and self.units == other.units
+        return self.units == other.units
 
     def __hash__(self):
         prime = 31
         hashcode = 1
         for i in range(2):
             hashcode = prime * hashcode + hash(tuple(self.units[i]))
-        hashcode = prime * hashcode + hash(self.flags)
         return hashcode
+
+    def key(self):
+        return (
+            tuple([unit.position for unit in self.units[0]]),
+            tuple([unit.position for unit in self.units[1]])
+        )
 
     def copy(self):
         return Ctf(
@@ -162,15 +167,21 @@ class Ctf(Environment):
 
         if unit_positions is not None:
             self.units = (
-                [Unit(str(i), 0, unit_positions[0][i]) for i in range(unit_positions[0])],
-                [Unit(str(i), 1, unit_positions[1][i]) for i in range(unit_positions[1])]
+                [Unit(str(i), 0, unit_positions[0][i]) for i in range(len(unit_positions[0]))],
+                [Unit(str(i), 1, unit_positions[1][i]) for i in range(len(unit_positions[1]))]
             )
         else:
-            step = (width - 3) / (number_units - 1)
-            self.units = (
-                [Unit(str(i), 0, (height - 2, int(i * step + 1))) for i in range(number_units)],
-                [Unit(str(i), 1, (1, int(i * step + 1))) for i in range(number_units)]
-            )
+            if number_units == 1:
+                self.units = (
+                    [Unit(str(i), 0, (height - 2, ceil((width - 1) / 2))) for i in range(number_units)],
+                    [Unit(str(i), 1, (1, (width - 1) // 2)) for i in range(number_units)]
+                )
+            else:
+                step = (width - 3) / (number_units - 1)
+                self.units = (
+                    [Unit(str(i), 0, (height - 2, int(i * step + 1))) for i in range(number_units)],
+                    [Unit(str(i), 1, (1, int(i * step + 1))) for i in range(number_units)]
+                )
 
     def _new_flags(self, flag_positions):
         height, width = self.board.shape

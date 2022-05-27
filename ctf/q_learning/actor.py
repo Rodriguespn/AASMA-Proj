@@ -7,13 +7,19 @@ class Actor:
         self.q_values = q_values if q_values is not None else {}
 
     def get_q_values(self, state):
-        q = self.q_values.get(state)
+        key = state.key()
+
+        q = self.q_values.get(key)
         if q is not None:
             return q
 
         q = np.zeros(self.number_actions).astype(np.float64)
-        self.q_values[state] = q
+        self.q_values[key] = q
         return q
 
     def update_q_values(self, state, action, q_value):
-        self.q_values[state][action] = q_value
+        key = state.key()
+
+        self.q_values[key][action] = q_value
+
+        np.save("../ctf/data/simple_1_0.npy", self.q_values)
