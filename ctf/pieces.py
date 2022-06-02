@@ -38,12 +38,11 @@ class Piece(object):
 
 
 class Unit(Piece, Actor):
-    def __init__(self, name, team, position, initial_position=None, has_flag=False, jail_timer=0, q_values=None, initial_q_values=None):
+    def __init__(self, name, team, position, impexp, initial_position=None, has_flag=False, jail_timer=0, q_values=None):
         """Unit piece, representing a controllable character on the board.
         """
         Piece.__init__(self, team, position, initial_position)
-        Actor.__init__(self, 5, q_values if q_values is not None else {}, initial_q_values,
-                       "../ctf/data/simple_1_1/{}_{}.npy".format(team, name))
+        Actor.__init__(self, 5, q_values if q_values is not None else {}, impexp)
         self.name = name
         self.has_flag = has_flag
         self.jail_timer = jail_timer
@@ -64,11 +63,11 @@ class Unit(Piece, Actor):
             name=self.name,
             team=self.team,
             position=(self.position[0], self.position[1]),
+            impexp=self.impexp,
             initial_position=(self.initial_position[0], self.initial_position[1]),
             has_flag=self.has_flag,
             jail_timer=self.jail_timer,
-            q_values=self.q_values,
-            initial_q_values=self.initial_q_values
+            q_values=self.q_values
         )
 
     def is_flag(self):

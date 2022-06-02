@@ -19,9 +19,9 @@ class Model:
         policy = policy / policy.sum()
         return np.random.choice(len(q), p=policy)
 
-    def q_learning(self, actor, action, cost, next_state):
+    def q_learning(self, actor, action, cost, next_state, next_actor):
         q_values = actor.get_q_values(self.state)
-        next_q_values = actor.get_q_values(next_state)
+        next_q_values = next_actor.get_q_values(next_state)
         return q_values[action] + self.alpha * (cost + self.gamma * next_q_values.min() - q_values[action])
 
     def run(self):
@@ -33,12 +33,13 @@ class Model:
         next_state.apply_actions(list(zip(next_actors, actions)))
         next_state.update_before()
 
-        for actor, action in zip(actors, actions):
+        for actor, action, next_actor in zip(actors, actions, next_actors):
             actor.update_q_values(self.state, action, self.q_learning(
                 actor,
                 action,
                 self.state.cost(actor, action),
-                next_state
+                next_state,
+                next_actor
             ))
 
         self.state = next_state

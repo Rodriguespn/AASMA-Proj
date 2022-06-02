@@ -1,10 +1,6 @@
 """Catpure The Flag (Ctf) state machine and game logic."""
 import itertools
-from math import ceil
 
-import numpy as np
-
-from ctf.pieces import Unit, Flag
 from ctf.q_learning.environment import Environment
 from ctf.rendering import Renderer
 
@@ -55,17 +51,16 @@ class Ctf(Environment):
         return height - position[0] - 1, width - position[1] - 1
 
     def observation(self, unit):
+        """result is orientation independent"""
+        allies = self.units[unit.team][:]
+        allies.remove(unit)
         if unit.team == 0:
-            allies = self.units[0][:]
-            allies.remove(unit)
             return (
                 unit.position,
                 tuple([unit.position for unit in sorted(allies)]),
                 tuple([unit.position for unit in sorted(self.units[1])])
             )
         else:
-            allies = self.units[1][:]
-            allies.remove(unit)
             return (
                 self._rotate_position(unit.position),
                 tuple([self._rotate_position(unit.position) for unit in sorted(allies)]),
@@ -107,6 +102,7 @@ class Ctf(Environment):
         return cost
 
     def _new_position(self, unit, direction, inverted=False):
+        """result is semi orientation independent"""
         y, x = unit.position
 
         if not inverted:
@@ -131,6 +127,7 @@ class Ctf(Environment):
         return y, x
 
     def apply_actions(self, actions):
+        """result is orientation independent"""
         for unit, action in actions:
             if unit.in_jail():
                 unit.jail_timer -= 1
@@ -186,60 +183,10 @@ class Ctf(Environment):
     def get_actors(self):
         return self.units[0] + self.units[1]
 
-    def _new_board(self, board):
-        if board is not None:
-            self.board = board
-        else:
-            self.board = np.zeros((16, 9))
-            self.board[0] = 1
-            self.board[-1] = 1
-            self.board[:, 0] = 1
-            self.board[:, -1] = 1
-
-    def _new_units(self, number_units, unit_positions):
-        height, width = self.board.shape
-
-        if unit_positions is not None:
-            self.units = (
-                [Unit(str(i), 0, unit_positions[0][i]) for i in range(len(unit_positions[0]))],
-                [Unit(str(i), 1, unit_positions[1][i]) for i in range(len(unit_positions[1]))]
-            )
-        else:
-            if number_units == 1:
-                self.units = (
-                    [Unit(str(i), 0, (height - 2, ceil((width - 1) / 2))) for i in range(number_units)],
-                    [Unit(str(i), 1, (1, (width - 1) // 2)) for i in range(number_units)]
-                )
-            else:
-                step = (width - 3) / (number_units - 1)
-                self.units = (
-                    [Unit(str(i), 0, (height - 2, int(i * step + 1))) for i in range(number_units)],
-                    [Unit(str(i), 1, (1, int(i * step + 1))) for i in range(number_units)]
-                )
-
-    def _new_flags(self, flag_positions):
-        height, width = self.board.shape
-
-        if flag_positions is not None:
-            self.flags = (
-                Flag(0, flag_positions[0]),
-                Flag(1, flag_positions[1])
-            )
-        else:
-            self.flags = (
-                Flag(0, (height - 2, ceil((width - 1) / 2))),
-                Flag(1, (1, (width - 1) // 2))
-            )
-
-    def new_game(self, board=None, number_units=2, unit_positions=None, flag_positions=None):
-        self._new_board(board)
-
-        self._new_units(number_units, unit_positions)
-        for i in range(2):
-            for unit in self.units[i]:
-                unit.import_q_values("../ctf/data/simple_1_0.npy")
-
-        self._new_flags(flag_positions)
+    def new_game(self, board, units, flags):
+        self.board = board
+        self.units = units
+        self.flags = flags
 
     def reset(self):
         for i in range(2):
