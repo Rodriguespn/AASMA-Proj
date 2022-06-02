@@ -59,7 +59,7 @@ class Ctf(Environment):
             allies = self.units[0][:]
             allies.remove(unit)
             return (
-                self.unit.position,
+                unit.position,
                 tuple([unit.position for unit in sorted(allies)]),
                 tuple([unit.position for unit in sorted(self.units[1])])
             )
@@ -67,7 +67,7 @@ class Ctf(Environment):
             allies = self.units[1][:]
             allies.remove(unit)
             return (
-                self.unit.position,
+                self._rotate_position(unit.position),
                 tuple([self._rotate_position(unit.position) for unit in sorted(allies)]),
                 tuple([self._rotate_position(unit.position) for unit in sorted(self.units[0])])
             )
