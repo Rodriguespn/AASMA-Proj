@@ -8,11 +8,11 @@ from ctf.pieces import Unit, Flag
 from ctf.q_learning.environment import Environment
 from ctf.rendering import Renderer
 
-UP = 0, 1
-DOWN = 1, 0
-RIGHT = 2, 3
-LEFT = 3, 2
-STAY = 4, 4
+UP = 0
+DOWN = 1
+RIGHT = 2
+LEFT = 3
+STAY = 4
 
 
 class Ctf(Environment):
@@ -54,16 +54,22 @@ class Ctf(Environment):
         height, width = self.board.shape
         return height - position[0] - 1, width - position[1] - 1
 
-    def key(self, unit):
+    def observation(self, unit):
         if unit.team == 0:
+            allies = self.units[0][:]
+            allies.remove(unit)
             return (
-                tuple([unit.position for unit in self.units[0]]),
-                tuple([unit.position for unit in self.units[1]])
+                self.unit.position,
+                tuple([unit.position for unit in sorted(allies)]),
+                tuple([unit.position for unit in sorted(self.units[1])])
             )
         else:
+            allies = self.units[1][:]
+            allies.remove(unit)
             return (
-                tuple([self._rotate_position(unit.position) for unit in self.units[1]]),
-                tuple([self._rotate_position(unit.position) for unit in self.units[0]])
+                self.unit.position,
+                tuple([self._rotate_position(unit.position) for unit in sorted(allies)]),
+                tuple([self._rotate_position(unit.position) for unit in sorted(self.units[0])])
             )
 
     def copy(self):
@@ -81,32 +87,46 @@ class Ctf(Environment):
             renderer=self.renderer
         )
 
-    def manhattan_distance(self, pos1, pos2):
+    @staticmethod
+    def manhattan_distance(pos1, pos2):
         return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
 
     def cost(self, unit, direction):
+        cost = 0.5
+
         new_position = self._new_position(unit, direction)
 
         if new_position == self.flags[~unit.team].position:
-            return 0
+            cost -= 0.5
 
         for enemy in self.units[~unit.team]:
             if self.manhattan_distance(enemy.position, self.flags[unit.team].position) == 1:
-                return 1
+                cost += 0.5
+                break
 
-        return 0.5
+        return cost
 
-    def _new_position(self, unit, direction):
+    def _new_position(self, unit, direction, inverted=False):
         y, x = unit.position
 
-        if direction == UP[unit.team] and self.board[y - 1][x] == 0:
-            return y - 1, x
-        elif direction == DOWN[unit.team] and self.board[y + 1][x] == 0:
-            return y + 1, x
-        elif direction == LEFT[unit.team] and self.board[y][x - 1] == 0:
-            return y, x - 1
-        elif direction == RIGHT[unit.team] and self.board[y][x + 1] == 0:
-            return y, x + 1
+        if not inverted:
+            if direction == UP and self.board[y - 1][x] == 0:
+                return y - 1, x
+            elif direction == DOWN and self.board[y + 1][x] == 0:
+                return y + 1, x
+            elif direction == LEFT and self.board[y][x - 1] == 0:
+                return y, x - 1
+            elif direction == RIGHT and self.board[y][x + 1] == 0:
+                return y, x + 1
+        else:
+            if direction == DOWN and self.board[y - 1][x] == 0:
+                return y - 1, x
+            elif direction == UP and self.board[y + 1][x] == 0:
+                return y + 1, x
+            elif direction == RIGHT and self.board[y][x - 1] == 0:
+                return y, x - 1
+            elif direction == LEFT and self.board[y][x + 1] == 0:
+                return y, x + 1
 
         return y, x
 
@@ -115,7 +135,7 @@ class Ctf(Environment):
             if unit.in_jail():
                 unit.jail_timer -= 1
             else:
-                unit.position = self._new_position(unit, action)
+                unit.position = self._new_position(unit, action, inverted=unit.team == 1)
 
     def _capture(self, unit):
         unit.jail_timer = self.jail_timer

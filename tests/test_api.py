@@ -100,7 +100,7 @@ def test_key_board_sync():
             legal_moves = game.legal_moves()
             game.move(unit=unit, direction=random.choice(legal_moves[unit]))
 
-            pos = game.key[unit]['position']
+            pos = game.observation[unit]['position']
 
             assert game.board[pos] == unit
 
@@ -313,7 +313,7 @@ def test_jail():
 
     obs = game.observation
 
-    assert game.key[special_unit]['in_jail']
+    assert game.observation[special_unit]['in_jail']
 
     legal_moves = game.legal_moves()
 
@@ -326,7 +326,7 @@ def test_jail():
             legal_moves = game.legal_moves()
             game.move(unit=unit, direction=random.choice(legal_moves[unit]))
 
-    assert not game.key[special_unit]['in_jail']
+    assert not game.observation[special_unit]['in_jail']
 
 
 def test_observation():
@@ -336,7 +336,7 @@ def test_observation():
     obs = game.observation
 
     assert np.array_equal(obs['board'], game.board)
-    assert obs['key'] == game.key
+    assert obs['key'] == game.observation
     assert obs['log'] == game.log
     assert obs['moved_units'] == game.moved_units
     assert obs['turn'] == game.turn

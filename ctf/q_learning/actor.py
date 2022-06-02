@@ -16,7 +16,7 @@ class Actor:
             np.save(self.output_file, self.q_values)
 
     def get_q_values(self, state):
-        key = state.key(self)
+        key = state.observation(self)
 
         q = self.q_values.get(key)
         if q is not None:
@@ -31,7 +31,7 @@ class Actor:
         return q
 
     def update_q_values(self, state, action, q_value):
-        key = state.key(self)
+        key = state.observation(self)
 
         self.q_values[key][action] = q_value
 
